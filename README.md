@@ -101,3 +101,57 @@ of acquisition activity in the final reporting interval.
 
 Dashboarding, dbt transformations, and workflow orchestration remain
 future work.
+
+## Verified database rebuild
+
+The database was rebuilt successfully in a separate database named
+saas_analytics_rebuild using regenerated CSV files and the saved SQL scripts.
+
+### Prerequisites
+
+- A running local PostgreSQL server.
+- psql and createdb available on PATH.
+- Python 3.12 with the dependencies from requirements.txt installed.
+
+Run all commands below from the project root.
+
+### Generate the CSV files
+
+```bash
+python scripts/02_generate_synthetic_data.py
+python scripts/03_generate_invoices.py
+python scripts/04_generate_payment_attempts.py
+```
+
+These regenerate the local CSV files using fixed seeds and an
+October 1, 2026 UTC reporting cutoff.
+
+### Build a fresh verification database
+
+```bash
+createdb -h localhost -p 5432 saas_analytics_rebuild
+psql -X -h localhost -p 5432 -d saas_analytics_rebuild -P pager=off -v ON_ERROR_STOP=1 -f sql/000_build_demo.sql
+```
+
+Run the build after database creation succeeds. The build requires
+the exact database name above and an empty public schema. It stops
+at the first SQL error and does not clear an existing populated database.
+
+### Verified results
+
+| Check | Result |
+|---|---:|
+| Accounts | 252 |
+| Subscriptions | 252 |
+| Invoices | 1,995 |
+| Payment attempts | 2,145 |
+| Data-quality checks passed | 6 of 6 |
+| Total billed (USD) | 685,400 |
+| Total collected (USD) | 587,480 |
+| Total outstanding (USD) | 97,920 |
+| MRR movement periods | 21 |
+| MRR reconciliation mismatches | 0 |
+
+This procedure verifies the database build. The existing analysis notebook
+connects to saas_analytics; it does not automatically switch to
+saas_analytics_rebuild.
