@@ -1,0 +1,24 @@
+# macOS files
+.DS_Store
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Local virtual environments
+.venv/
+venv/
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# Generated datasets
+data/generated/
+
+# Logs
+*.log
