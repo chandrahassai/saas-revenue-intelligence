@@ -22,3 +22,9 @@ data/generated/
 
 # Logs
 *.log
+
+# dbt generated files
+target/
+dbt_packages/
+logs/
+.user.yml

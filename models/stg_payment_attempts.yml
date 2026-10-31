@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: stg_payment_attempts
+    description: "One row per payment attempt, including successful and failed attempts."
+
+    columns:
+      - name: payment_attempt_id
+        description: "Unique payment attempt identifier."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: invoice_id
+        description: "Invoice associated with the payment attempt."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_invoices')
+                field: invoice_id
+
+      - name: attempted_amount_usd
+        description: "Amount attempted in USD; collected cash only when status is succeeded."
+        data_tests:
+          - not_null
+
+      - name: status
+        description: "Recorded outcome of the completed payment attempt."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['succeeded', 'failed']
+
+      - name: attempted_at
+        description: "Timestamp when the payment attempt began."
+        data_tests:
+          - not_null
+
+      - name: completed_at
+        description: "Timestamp when the payment attempt completed."
+        data_tests:
+          - not_null
+
+      - name: failure_reason
+        description: "Recorded failure reason; null for successful attempts."

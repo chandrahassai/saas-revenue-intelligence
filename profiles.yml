@@ -1,0 +1,14 @@
+saas_revenue:
+  target: dev
+
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: "{{ env_var('DBT_USER') }}"
+      password: "{{ env_var('DBT_PASSWORD', '') }}"
+      dbname: "{{ env_var('DBT_DATABASE', 'saas_analytics') }}"
+      schema: analytics
+      threads: 4
+      connect_timeout: 5

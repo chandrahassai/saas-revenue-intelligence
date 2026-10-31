@@ -1,0 +1,46 @@
+ version: 2
+
+models:
+  - name: stg_invoices
+    description: "One row per invoice, including synthetic and teaching records."
+
+    columns:
+      - name: invoice_id
+        description: "Unique invoice identifier."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: subscription_id
+        description: "Subscription associated with the invoice."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_subscriptions')
+                field: subscription_id
+
+      - name: invoice_amount_usd
+        description: "Total amount billed on the invoice in USD."
+        data_tests:
+          - not_null
+
+      - name: issued_at
+        description: "Timestamp when the invoice was issued."
+        data_tests:
+          - not_null
+
+      - name: due_at
+        description: "Timestamp when payment was due."
+        data_tests:
+          - not_null
+
+      - name: service_period_start
+        description: "Start of the service period covered by the invoice."
+        data_tests:
+          - not_null
+
+      - name: service_period_end
+        description: "End of the service period covered by the invoice."
+        data_tests:
+          - not_null

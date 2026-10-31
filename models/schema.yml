@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: saas_raw
+    description: "Project tables loaded by the numbered SQL scripts."
+    schema: public
+    tables:
+      - name: accounts
+      - name: subscriptions
+      - name: invoices
+      - name: payment_attempts
+
+models:
+  - name: stg_accounts
+    description: "One row per account, including synthetic and teaching records."
+    columns:
+      - name: account_id
+        description: "Unique account identifier."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: signed_up_at
+        description: "Account signup timestamp."
+        data_tests:
+          - not_null

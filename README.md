@@ -99,8 +99,8 @@ The subscription model uses fixed prices and covers starts and churn.
 Generated signup dates end before September 1, 2026, limiting interpretation
 of acquisition activity in the final reporting interval.
 
-Dashboarding, dbt transformations, and workflow orchestration remain
-future work.
+The dbt staging layer is implemented and tested. Analytical dbt models,
+dashboarding, and workflow orchestration remain future work.
 
 ## Verified database rebuild
 
@@ -155,3 +155,29 @@ at the first SQL error and does not clear an existing populated database.
 This procedure verifies the database build. The existing analysis notebook
 connects to saas_analytics; it does not automatically switch to
 saas_analytics_rebuild.
+
+## dbt staging layer
+
+Four staging views are built in the PostgreSQL `analytics` schema:
+
+- `stg_accounts`
+- `stg_subscriptions`
+- `stg_invoices`
+- `stg_payment_attempts`
+
+The staging layer preserves the source records, including synthetic data
+and teaching examples. It has 29 passing data tests covering unique IDs,
+required fields, accepted values, and relationships between tables.
+
+Development uses the separate `saas-dbt` conda environment. Package
+versions are recorded in `requirements-dbt.txt`.
+
+The project profile reads `DBT_USER` from the environment and defaults
+to the `saas_analytics` database.
+
+Run from the project directory with `DBT_USER` set:
+
+`DBT_ENGINE_MANAGE_STATE=0 dbt build --profiles-dir .`
+
+The environment prefix disables dbt State for this local build.
+The verified run built four views and passed all 29 tests.

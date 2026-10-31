@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: stg_subscriptions
+    description: "One row per subscription, including synthetic and teaching records."
+
+    columns:
+      - name: subscription_id
+        description: "Unique subscription identifier."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: account_id
+        description: "Account that owns the subscription."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_accounts')
+                field: account_id
+
+      - name: billing_amount_usd
+        description: "Amount billed for one complete billing interval."
+        data_tests:
+          - not_null
+
+      - name: billing_interval_months
+        description: "Billing interval: one month or twelve months."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 12]
+                quote: false
+
+      - name: started_at
+        description: "Timestamp when the subscription started."
+        data_tests:
+          - not_null
+
+      - name: ended_at
+        description: "Subscription end timestamp; null when no end is recorded."
