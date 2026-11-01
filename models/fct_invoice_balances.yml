@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: fct_invoice_balances
+    description: >
+      One row per invoice issued before the reporting cutoff.
+      Collected cash includes only successful payments completed
+      before that cutoff. Includes synthetic and teaching records.
+
+    columns:
+      - name: invoice_id
+        description: "Unique invoice identifier."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_invoices')
+                field: invoice_id
+
+      - name: subscription_id
+        description: "Subscription associated with the invoice."
+        data_tests:
+          - not_null
+
+      - name: as_of
+        description: "Reporting cutoff, interpreted as an exclusive timestamp."
+        data_tests:
+          - not_null
+
+      - name: invoice_amount_usd
+        description: "Original billed amount in USD."
+        data_tests:
+          - not_null
+
+      - name: collected_cash_usd
+        description: "Successful payments completed before the reporting cutoff."
+        data_tests:
+          - not_null
+
+      - name: outstanding_balance_usd
+        description: "Billed amount minus collected cash at the reporting cutoff."
+        data_tests:
+          - not_null

@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: fct_invoice_aging
+    description: >
+      One row per invoice at the reporting cutoff.
+      Aging uses UTC calendar dates. Includes paid invoices;
+      unpaid aging reports must filter outstanding_balance_usd > 0.
+
+    columns:
+      - name: invoice_id
+        description: "Unique invoice identifier."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_invoice_balances')
+                field: invoice_id
+
+      - name: days_past_due
+        description: "UTC calendar days past the due date, with a minimum of zero."
+        data_tests:
+          - not_null
+
+      - name: aging_bucket
+        description: "Due-date aging category at the reporting cutoff."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - 'Not overdue'
+                  - '1-30 days'
+                  - '31-60 days'
+                  - '61-90 days'
+                  - '91+ days'
+
+      - name: is_overdue
+        description: "True when the invoice has a positive balance and is past due."
+        data_tests:
+          - not_null
