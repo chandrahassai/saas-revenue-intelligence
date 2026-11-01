@@ -1,8 +1,8 @@
 # SaaS Revenue Intelligence & Customer Retention Analytics
 
-A SQL and Python analytics project that examines recurring revenue,
-subscription churn, unpaid invoices, and collection review priorities
-using synthetic SaaS billing data.
+A SQL, Python, and dbt analytics project that examines recurring revenue,
+subscription churn, cohort retention, unpaid invoices, and collection
+review priorities using synthetic SaaS billing data.
 
 ## Current implementation
 
@@ -11,9 +11,11 @@ using synthetic SaaS billing data.
 - SQL views for MRR snapshots, MRR movements, plan-level churn,
   invoice aging, account balances, and overdue payment diagnostics.
 - A Jupyter notebook containing charts, analysis, and documented findings.
-- Eleven dbt views with 92 passing data tests covering staging,
+- Twelve dbt views with 100 passing data tests covering staging,
   collections, overdue payment diagnostics, monthly MRR reconciliation,
-  and plan-level subscription churn.
+  plan-level subscription churn, and cohort retention.
+- Locally generated dbt documentation with model descriptions,
+  column metadata, SQL, test definitions, and a dependency graph.
 
 ## Technology
 
@@ -38,9 +40,9 @@ plus two original teaching examples.
 Generated CSV files are excluded from Git. Their generation scripts
 are included.
 
-MRR and churn analysis includes only generated subscriptions whose IDs
-begin with `SYN_`. Collections analysis includes generated records
-and the two teaching examples.
+MRR, churn, and cohort retention analysis include only generated
+subscriptions whose IDs begin with `SYN_`. Collections analysis includes
+generated records and the two teaching examples.
 
 ## Selected findings
 
@@ -51,6 +53,8 @@ At the October 1, 2026 UTC reporting cutoff:
 - All 21 monthly MRR movement periods reconciled.
 - Pooled monthly subscription churn was 1.78% for Growth,
   1.61% for Starter, and 1.08% for Enterprise.
+- The January 2025 subscription cohort retained five of its original
+  eight subscriptions at month 21, a retention rate of 62.50%.
 
 Billing and collection results include:
 
@@ -82,7 +86,7 @@ the cause of nonpayment or predict recoverable cash.
 - `models/`: dbt staging and analytical models with YAML documentation
   and data tests.
 - `tests/`: SQL checks for coverage, balance rules, reconciliation,
-  and plan-level churn rules.
+  plan-level churn rules, and cohort retention rules.
 - `dbt_project.yml`: dbt project configuration.
 - `profiles.yml`: PostgreSQL connection configuration using environment
   variables.
@@ -101,6 +105,8 @@ Use the project's `saas-analytics` Python environment and open
 
 The notebook has been rerun successfully from a restarted kernel.
 The dbt models are built separately in the `analytics` schema.
+The new cohort retention analysis is currently available through dbt;
+it has not yet been added to the notebook.
 
 ## Verified database rebuild
 
@@ -179,7 +185,7 @@ required fields, accepted values, and relationships between tables.
 
 ## dbt analytical models
 
-The four staging views feed seven analytical views:
+The four staging views feed eight analytical views:
 
 | Model | Purpose |
 |---|---|
@@ -190,13 +196,18 @@ The four staging views feed seven analytical views:
 | `fct_monthly_mrr_snapshot` | Active generated accounts, subscriptions, and monthly MRR |
 | `fct_monthly_mrr_movements` | New and churned MRR reconciled to closing MRR |
 | `fct_monthly_plan_churn` | Monthly churn among opening subscriptions, grouped by plan |
+| `fct_monthly_cohort_retention` | Subscription retention by start-month cohort and monthly checkpoint |
 
 Collections models include generated records and teaching examples.
-MRR and churn models include only generated subscriptions whose IDs
-begin with `SYN_`.
+MRR, churn, and cohort retention models include only generated subscriptions
+whose IDs begin with `SYN_`.
 
-The default collections reporting cutoff is October 1, 2026 at 00:00 UTC.
-MRR snapshots span January 1, 2025 through October 1, 2026.
+The default reporting cutoff for collections and cohort retention is
+October 1, 2026 at 00:00 UTC.
+
+The MRR snapshot calendar spans January 1, 2025 through October 1, 2026.
+Cohort retention uses subsequent checkpoints from that calendar,
+limited to the reporting cutoff.
 
 ### Running dbt
 
@@ -220,10 +231,12 @@ a PostgreSQL deadlock.
 
 ### Verified dbt results
 
-The full build passed all eleven views and 92 data tests.
-dbt reported `PASS=103`, `ERROR=0`, and `SKIP=0`.
+The full build successfully created all twelve views and passed
+all 100 data tests.
 
-The 29 staging tests are included in the 92-test total.
+dbt reported `PASS=112`, `ERROR=0`, and `SKIP=0`.
+
+The 29 staging tests are included in the 100-test total.
 The six original SQL data-quality checks are separate.
 
 | Check | Verified result |
@@ -236,6 +249,9 @@ The six original SQL data-quality checks are separate.
 | Plan-period churn rows | 63 |
 | Churn reporting periods | 21 |
 | Subscription plans | 3 |
+| Subscription start-month cohorts | 21 |
+| Cohort checkpoint rows | 231 |
+| Cohort month numbers | 1–21 |
 
 Account collections reconcile against invoice-level counts and balances.
 Overdue diagnostics reconcile invoice IDs, reporting cutoffs, and balances
@@ -246,6 +262,62 @@ in every period.
 
 Plan-level churn tests check plan-period uniqueness, valid reporting
 periods, valid counts, and valid percentages.
+
+Cohort retention tests check cohort-checkpoint uniqueness, valid
+checkpoint dates, valid counts, percentage calculations, constant
+cohort sizes, and non-increasing retained subscription counts.
+
+### Cohort retention results
+
+Cohorts are defined by the UTC calendar month in which subscriptions started.
+
+Month 1 is the first monthly checkpoint after the cohort's start month.
+For example, the January 2025 cohort is first observed on February 1, 2025.
+These are calendar-month checkpoints, not exact subscription anniversaries.
+
+A subscription is retained when it has started by the checkpoint and
+has no end date, or its end date is after the checkpoint.
+Retention measures subscription activity regardless of payment status.
+
+No artificial month-0 baseline is added. Future observations for younger
+cohorts are omitted.
+
+The January 2025 cohort produced:
+
+| Month number | Checkpoint | Original subscriptions | Retained subscriptions | Retention |
+|---|---|---:|---:|---:|
+| 1 | 2025-02-01 | 8 | 8 | 100.00% |
+| 6 | 2025-07-01 | 8 | 6 | 75.00% |
+| 12 | 2026-01-01 | 8 | 6 | 75.00% |
+| 21 | 2026-10-01 | 8 | 5 | 62.50% |
+
+At October 1, 2026, the cohorts contained 250 original subscriptions
+and 216 retained subscriptions, or 86.40%.
+
+That combined percentage includes cohorts of different ages.
+It is not a fixed-duration retention rate such as 12-month retention.
+Comparisons between cohorts should use the same month number.
+
+### dbt documentation
+
+With the dbt environment active and `DBT_USER` set, generate the
+documentation and start its local server:
+
+```bash
+DBT_ENGINE_MANAGE_STATE=0 dbt docs generate --profiles-dir .
+DBT_ENGINE_MANAGE_STATE=0 dbt docs serve --profiles-dir . --port 8080 --no-browser
+```
+
+Open `http://localhost:8080` in your browser.
+
+The documentation includes model descriptions, column metadata,
+test definitions, source and compiled SQL, and a dependency graph.
+
+Keep the serving Terminal running while viewing the documentation.
+Press Control + C in that Terminal to stop the server.
+
+Generated documentation is stored in the ignored `target/` directory.
+Regenerate it after changing model SQL or YAML documentation.
 
 ## Metric definitions and limitations
 
@@ -262,6 +334,11 @@ Pooled monthly churn divides total churn events by total opening
 subscription counts across periods. It is not an average of monthly
 percentages or cumulative customer churn.
 
+Cohort retention measures retained subscriptions divided by the original
+subscription count in each start-month cohort. The current generated
+dataset has one subscription per account. The model does not measure
+product usage retention or revenue retention.
+
 Historical invoice balances include only invoices issued and successful
 payments completed before the reporting cutoff. Aging uses UTC calendar dates.
 
@@ -275,7 +352,7 @@ of acquisition activity in the final reporting interval.
 
 ## Future work
 
-- Retention cohort analysis.
+- Cohort retention visualizations in the analysis notebook.
 - Conversion-funnel analysis with suitable event data.
 - Dashboarding.
 - Workflow orchestration.

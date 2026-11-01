@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: fct_monthly_cohort_retention
+    description: >
+      One row per generated subscription start-month cohort and
+      subsequent monthly UTC checkpoint, through the reporting cutoff.
+      Month 1 is the first checkpoint after the cohort's start month.
+      Retention measures active subscriptions, regardless of payment status.
+      Future observations are omitted. No artificial month-0 baseline is added.
+
+    columns:
+      - name: cohort_month
+        description: "First UTC calendar date of the subscription start month."
+        data_tests:
+          - not_null
+
+      - name: snapshot_date
+        description: "Observation date, evaluated at 00:00 UTC."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_monthly_mrr_snapshot')
+                field: snapshot_date
+
+      - name: month_number
+        description: "Calendar months between cohort_month and snapshot_date."
+        data_tests:
+          - not_null
+
+      - name: cohort_subscriptions
+        description: "Original subscription count in the cohort."
+        data_tests:
+          - not_null
+
+      - name: retained_subscriptions
+        description: "Cohort subscriptions still active at the checkpoint."
+        data_tests:
+          - not_null
+
+      - name: retention_pct
+        description: "100 times retained subscriptions divided by cohort size."
+        data_tests:
+          - not_null
