@@ -371,7 +371,7 @@ The workflow:
 The first GitHub-hosted run completed successfully across all steps.
 The current project contains twelve dbt views and 100 data tests.
 
-## Revenue dashboard
+## Local dashboard
 
 The local Streamlit dashboard reads the dbt monthly MRR views in the
 `analytics` schema using a read-only database connection.
@@ -406,7 +406,16 @@ The connection defaults to localhost:5432, database `saas_analytics`,
 and the current operating-system username. Connection settings can be
 overridden using PGHOST, PGPORT, PGDATABASE, PGUSER, and PGPASSWORD.
 
-Retention and collections dashboard pages remain future work.
+The Retention page reads `analytics.fct_monthly_cohort_retention`
+and `analytics.fct_monthly_plan_churn`. It displays an interactive
+cohort retention heatmap, original cohort sizes, pooled monthly churn
+by plan, and an expandable cohort checkpoint table.
+
+Verified results include 21 cohorts, 231 observed checkpoints, and
+250 generated subscriptions. Pooled monthly churn is 1.78% for Growth,
+1.61% for Starter, and 1.08% for Enterprise.
+
+The collections dashboard page remains future work.
 
 ## Future work
 
