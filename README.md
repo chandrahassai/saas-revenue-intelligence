@@ -415,10 +415,20 @@ Verified results include 21 cohorts, 231 observed checkpoints, and
 250 generated subscriptions. Pooled monthly churn is 1.78% for Growth,
 1.61% for Starter, and 1.08% for Enterprise.
 
-The collections dashboard page remains future work.
+The Collections page reads `analytics.fct_invoice_aging`,
+`analytics.mart_account_collections`, and
+`analytics.fct_overdue_payment_diagnostics`.
+
+It displays outstanding and overdue balances, invoice aging,
+recorded payment activity, and the ten accounts with the largest
+overdue balances. Expandable tables provide aging totals, payment
+activity totals, and all accounts with a balance.
+
+Verified results include USD 97,920 outstanding, USD 89,620 overdue,
+and USD 64,700 at least 91 days overdue. The ten largest overdue
+account balances total USD 31,200, or 34.81% of overdue dollars.
 
 ## Future work
 
 - Conversion-funnel analysis with suitable event data.
-- Dashboarding.
 - Workflow orchestration.
