@@ -371,6 +371,43 @@ The workflow:
 The first GitHub-hosted run completed successfully across all steps.
 The current project contains twelve dbt views and 100 data tests.
 
+## Revenue dashboard
+
+The local Streamlit dashboard reads the dbt monthly MRR views in the
+`analytics` schema using a read-only database connection.
+
+Features include:
+
+- Monthly reporting snapshot selection.
+- MRR, active accounts, new MRR, and churned MRR.
+- Net MRR change since the previous checkpoint.
+- Interactive MRR trend and movement charts.
+- An expandable monthly metrics table.
+- Cached queries and a Refresh data button.
+
+The dashboard includes generated subscriptions only. MRR is separate
+from collected cash. The first snapshot has no movement metrics because
+there is no preceding checkpoint.
+
+Dashboard dependencies are recorded in `requirements-dashboard.txt`.
+
+With PostgreSQL running and the dbt models already built, run from
+the project root:
+
+```bash
+conda activate saas-dashboard
+python -m pip install -r requirements-dashboard.txt
+python -m streamlit run dashboard/app.py --server.address 127.0.0.1 --server.port 8501 --server.headless true
+```
+
+Open http://127.0.0.1:8501 in a browser.
+
+The connection defaults to localhost:5432, database `saas_analytics`,
+and the current operating-system username. Connection settings can be
+overridden using PGHOST, PGPORT, PGDATABASE, PGUSER, and PGPASSWORD.
+
+Retention and collections dashboard pages remain future work.
+
 ## Future work
 
 - Conversion-funnel analysis with suitable event data.
