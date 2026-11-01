@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: mart_account_collections
+    description: >
+      One row per account with a positive invoice balance
+      at the configured reporting cutoff.
+      Includes synthetic and teaching records.
+
+    columns:
+      - name: account_id
+        description: "Unique account identifier."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_accounts')
+                field: account_id
+
+      - name: as_of
+        description: "Reporting cutoff inherited from invoice balances."
+        data_tests:
+          - not_null
+
+      - name: unpaid_invoice_count
+        description: "Number of invoices with a positive remaining balance."
+        data_tests:
+          - not_null
+
+      - name: overdue_invoice_count
+        description: "Number of unpaid invoices past due."
+        data_tests:
+          - not_null
+
+      - name: total_outstanding_usd
+        description: "Total remaining invoice balance in USD."
+        data_tests:
+          - not_null
+
+      - name: overdue_balance_usd
+        description: "Remaining balance on overdue invoices in USD."
+        data_tests:
+          - not_null
+
+      - name: balance_91_plus_usd
+        description: "Remaining balance at least 91 days past due in USD."
+        data_tests:
+          - not_null
+
+      - name: oldest_unpaid_days_past_due
+        description: "Largest days-past-due value among unpaid invoices."

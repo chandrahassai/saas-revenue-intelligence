@@ -11,13 +11,16 @@ using synthetic SaaS billing data.
 - SQL views for MRR snapshots, MRR movements, plan-level churn,
   invoice aging, account balances, and overdue payment diagnostics.
 - A Jupyter notebook containing charts, analysis, and documented findings.
+- Seven dbt views with 56 passing data tests, including invoice coverage,
+  balance rules, and account-to-invoice reconciliation.
 
 ## Technology
 
 Python 3.12, PostgreSQL, SQL, pandas, psycopg, Matplotlib, Jupyter Notebook,
-and Git.
+dbt Core 1.12.6, dbt-postgres 1.11.0, Git, and GitHub.
 
-Direct Python package versions are recorded in requirements.txt.
+Analysis dependencies are recorded in `requirements.txt`.
+dbt dependencies are recorded separately in `requirements-dbt.txt`.
 
 ## Dataset
 
@@ -70,6 +73,11 @@ Overdue balances were classified as:
 - notebooks/01_revenue_analysis.ipynb: analysis and visualizations.
 - requirements.txt: direct Python dependencies.
 - data/generated/: locally generated CSV files, excluded from Git.
+- models/: dbt staging and analytical models with YAML documentation and tests.
+- tests/: SQL checks for invoice coverage, balance rules, and reconciliation.
+- dbt_project.yml: dbt project configuration.
+- profiles.yml: PostgreSQL connection configuration using environment variables.
+- requirements-dbt.txt: dbt environment dependencies.
 
 ## Running the analysis
 
@@ -99,8 +107,10 @@ The subscription model uses fixed prices and covers starts and churn.
 Generated signup dates end before September 1, 2026, limiting interpretation
 of acquisition activity in the final reporting interval.
 
-The dbt staging layer is implemented and tested. Analytical dbt models,
-dashboarding, and workflow orchestration remain future work.
+The dbt staging layer and analytical models for invoice balances,
+invoice aging, and account collections are implemented and tested.
+Migration of the remaining SQL analytics into dbt, dashboarding,
+and workflow orchestration remain future work.
 
 ## Verified database rebuild
 
@@ -180,4 +190,32 @@ Run from the project directory with `DBT_USER` set:
 `DBT_ENGINE_MANAGE_STATE=0 dbt build --profiles-dir .`
 
 The environment prefix disables dbt State for this local build.
-The verified run built four views and passed all 29 tests.
+The staging layer contains four views and 29 data tests.
+The full build, including analytical models, is documented below.
+
+## dbt analytical models
+
+The four staging views feed three analytical views:
+
+- `fct_invoice_balances`: invoice balances at the reporting cutoff.
+- `fct_invoice_aging`: UTC calendar-day aging and overdue flags.
+- `mart_account_collections`: unpaid and overdue balances by account.
+
+The default reporting cutoff is October 1, 2026 at 00:00 UTC.
+These models include synthetic and teaching records.
+
+The verified full build contains seven views and 56 passing data tests.
+
+Verified collections results:
+
+| Metric | Result |
+|---|---:|
+| Accounts with a balance | 154 |
+| Unpaid invoices | 327 |
+| Overdue invoices | 291 |
+| Total outstanding (USD) | 97,920 |
+| Overdue balance (USD) | 89,620 |
+| Balance 91+ days past due (USD) | 64,700 |
+
+An automated reconciliation test checks that account-level invoice
+counts and balances match the invoice-level totals.
