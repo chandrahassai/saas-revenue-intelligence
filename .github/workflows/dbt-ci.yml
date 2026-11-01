@@ -55,6 +55,7 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-dbt.txt
+            requirements-dashboard.txt
 
       - name: Install PostgreSQL client
         run: |
@@ -73,6 +74,12 @@ jobs:
           .ci-dbt/bin/python -m pip install -r requirements-dbt.txt
           .ci-dbt/bin/python -m pip check
 
+      - name: Install dashboard dependencies
+        run: |
+          python -m venv .ci-dashboard
+          .ci-dashboard/bin/python -m pip install -r requirements-dashboard.txt
+          .ci-dashboard/bin/python -m pip check
+
       - name: Generate synthetic CSV files
         run: |
           .ci-analytics/bin/python scripts/02_generate_synthetic_data.py
@@ -88,6 +95,10 @@ jobs:
 
       - name: Build and test dbt models
         run: .ci-dbt/bin/dbt build --profiles-dir .
+
+      - name: Test dashboard pages
+        run: |
+          .ci-dashboard/bin/python -m unittest discover -s dashboard/tests -v
 
       - name: Generate dbt documentation
         run: .ci-dbt/bin/dbt docs generate --profiles-dir .
