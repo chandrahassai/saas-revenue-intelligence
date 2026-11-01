@@ -105,8 +105,10 @@ Use the project's `saas-analytics` Python environment and open
 
 The notebook has been rerun successfully from a restarted kernel.
 The dbt models are built separately in the `analytics` schema.
-The new cohort retention analysis is currently available through dbt;
-it has not yet been added to the notebook.
+
+The notebook includes a cohort retention heatmap and interpretation
+using `analytics.fct_monthly_cohort_retention`. Build the dbt models
+before running that section.
 
 ## Verified database rebuild
 
@@ -352,7 +354,6 @@ of acquisition activity in the final reporting interval.
 
 ## Future work
 
-- Cohort retention visualizations in the analysis notebook.
 - Conversion-funnel analysis with suitable event data.
 - Dashboarding.
 - Workflow orchestration.
