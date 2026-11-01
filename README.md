@@ -428,6 +428,26 @@ Verified results include USD 97,920 outstanding, USD 89,620 overdue,
 and USD 64,700 at least 91 days overdue. The ten largest overdue
 account balances total USD 31,200, or 34.81% of overdue dollars.
 
+### Dashboard integration checks
+
+Five Streamlit AppTest checks passed locally and in GitHub Actions
+against the rebuilt verification database.
+
+The checks cover latest revenue metrics, historical snapshot selection,
+Refresh data behavior, first-snapshot handling, retention totals,
+plan churn, collections totals, payment activity, and top-ten balances.
+
+The verified pipeline builds 12 dbt views, runs 100 dbt data tests,
+and passes five dashboard integration tests.
+
+Run the dashboard checks locally with PostgreSQL and the dbt views
+available:
+
+```bash
+conda activate saas-dashboard
+python -m unittest discover -s dashboard/tests -v
+```
+
 ## Future work
 
 - Conversion-funnel analysis with suitable event data.
