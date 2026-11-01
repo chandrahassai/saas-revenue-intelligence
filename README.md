@@ -352,9 +352,27 @@ The subscription model uses fixed prices and covers starts and churn.
 Generated signup dates end before September 1, 2026, limiting interpretation
 of acquisition activity in the final reporting interval.
 
+## Continuous integration
+
+The GitHub Actions workflow in `.github/workflows/dbt-ci.yml` runs on
+pushes to `main`, pull requests targeting `main`, and manual launches.
+
+Each run uses an Ubuntu runner, Python 3.12, and a fresh PostgreSQL 18
+service containing the `saas_analytics_rebuild` database.
+
+The workflow:
+
+1. Installs analysis and dbt dependencies in separate Python environments.
+2. Regenerates the synthetic CSV files.
+3. Rebuilds the verification database using `sql/000_build_demo.sql`.
+4. Checks the dbt connection and runs the full dbt build and data tests.
+5. Generates dbt documentation.
+
+The first GitHub-hosted run completed successfully across all steps.
+The current project contains twelve dbt views and 100 data tests.
+
 ## Future work
 
 - Conversion-funnel analysis with suitable event data.
 - Dashboarding.
 - Workflow orchestration.
-- Automated CI checks.
