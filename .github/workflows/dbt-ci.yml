@@ -1,0 +1,93 @@
+name: Data pipeline CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_analytics_rebuild
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d saas_analytics_rebuild"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: saas_analytics_rebuild
+      DBT_USER: postgres
+      DBT_PASSWORD: postgres
+      DBT_DATABASE: saas_analytics_rebuild
+      DBT_ENGINE_MANAGE_STATE: "0"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dbt.txt
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Install analysis dependencies
+        run: |
+          python -m venv .ci-analytics
+          .ci-analytics/bin/python -m pip install -r requirements.txt
+          .ci-analytics/bin/python -m pip check
+
+      - name: Install dbt dependencies
+        run: |
+          python -m venv .ci-dbt
+          .ci-dbt/bin/python -m pip install -r requirements-dbt.txt
+          .ci-dbt/bin/python -m pip check
+
+      - name: Generate synthetic CSV files
+        run: |
+          .ci-analytics/bin/python scripts/02_generate_synthetic_data.py
+          .ci-analytics/bin/python scripts/03_generate_invoices.py
+          .ci-analytics/bin/python scripts/04_generate_payment_attempts.py
+
+      - name: Rebuild verification database
+        run: |
+          psql -X -P pager=off -v ON_ERROR_STOP=1 -f sql/000_build_demo.sql
+
+      - name: Check dbt connection
+        run: .ci-dbt/bin/dbt debug --profiles-dir .
+
+      - name: Build and test dbt models
+        run: .ci-dbt/bin/dbt build --profiles-dir .
+
+      - name: Generate dbt documentation
+        run: .ci-dbt/bin/dbt docs generate --profiles-dir .
