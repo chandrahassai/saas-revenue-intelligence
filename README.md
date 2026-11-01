@@ -195,11 +195,17 @@ The full build, including analytical models, is documented below.
 
 ## dbt analytical models
 
-The four staging views feed three analytical views:
+The four staging views feed four analytical views:
 
 - `fct_invoice_balances`: invoice balances at the reporting cutoff.
 - `fct_invoice_aging`: UTC calendar-day aging and overdue flags.
 - `mart_account_collections`: unpaid and overdue balances by account.
+- `fct_overdue_payment_diagnostics`: completed payment activity behind
+  each overdue invoice.
+
+Local builds use one thread after concurrent view replacement encountered
+a PostgreSQL deadlock. The single-thread full build passed all eight
+models and 67 tests.
 
 The default reporting cutoff is October 1, 2026 at 00:00 UTC.
 These models include synthetic and teaching records.

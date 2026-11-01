@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: fct_overdue_payment_diagnostics
+    description: >
+      One row per overdue invoice at the reporting cutoff,
+      classified by recorded completed payment activity.
+      Categories do not establish the cause of nonpayment
+      or predict recoverable cash.
+
+    columns:
+      - name: invoice_id
+        description: "Unique overdue invoice identifier."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_invoice_aging')
+                field: invoice_id
+
+      - name: as_of
+        description: "Reporting cutoff inherited from invoice aging."
+        data_tests:
+          - not_null
+
+      - name: outstanding_balance_usd
+        description: "Remaining overdue invoice balance in USD."
+        data_tests:
+          - not_null
+
+      - name: completed_attempt_count
+        description: "Number of attempts completed before the cutoff."
+        data_tests:
+          - not_null
+
+      - name: failed_attempt_count
+        description: "Number of failed attempts completed before the cutoff."
+        data_tests:
+          - not_null
+
+      - name: successful_attempt_count
+        description: "Number of successful attempts completed before the cutoff."
+        data_tests:
+          - not_null
+
+      - name: latest_completed_attempt_at
+        description: "Latest completion timestamp; null when no completed attempt exists."
+
+      - name: payment_activity_category
+        description: "Classification of recorded payment activity."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - 'No completed attempts'
+                  - 'Partially paid'
+                  - 'Failed attempts only'
+                  - 'Review'

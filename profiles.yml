@@ -10,5 +10,5 @@ saas_revenue:
       password: "{{ env_var('DBT_PASSWORD', '') }}"
       dbname: "{{ env_var('DBT_DATABASE', 'saas_analytics') }}"
       schema: analytics
-      threads: 4
+      threads: 1
       connect_timeout: 5
