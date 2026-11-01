@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: fct_monthly_mrr_snapshot
+    description: >
+      One row per monthly UTC reporting instant from January 2025
+      through October 2026. Includes only subscriptions whose IDs
+      begin with SYN_. Annual billing amounts are normalized to MRR.
+
+    columns:
+      - name: snapshot_date
+        description: "UTC reporting date at midnight."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: active_accounts
+        description: "Distinct accounts with an active generated subscription."
+        data_tests:
+          - not_null
+
+      - name: active_subscriptions
+        description: "Generated subscriptions active at the reporting instant."
+        data_tests:
+          - not_null
+
+      - name: total_mrr_usd
+        description: "Monthly normalized recurring revenue in USD."
+        data_tests:
+          - not_null

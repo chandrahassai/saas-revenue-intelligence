@@ -13,6 +13,8 @@ using synthetic SaaS billing data.
 - A Jupyter notebook containing charts, analysis, and documented findings.
 - Seven dbt views with 56 passing data tests, including invoice coverage,
   balance rules, and account-to-invoice reconciliation.
+  - Ten dbt views with 84 passing data tests covering staging,
+  collections, overdue payment diagnostics, and monthly MRR reconciliation.
 
 ## Technology
 
@@ -193,28 +195,29 @@ The environment prefix disables dbt State for this local build.
 The staging layer contains four views and 29 data tests.
 The full build, including analytical models, is documented below.
 
-## dbt analytical models
+## ## dbt analytical models
 
-The four staging views feed four analytical views:
+Four staging views feed six analytical views:
 
 - `fct_invoice_balances`: invoice balances at the reporting cutoff.
 - `fct_invoice_aging`: UTC calendar-day aging and overdue flags.
 - `mart_account_collections`: unpaid and overdue balances by account.
 - `fct_overdue_payment_diagnostics`: completed payment activity behind
   each overdue invoice.
+- `fct_monthly_mrr_snapshot`: active accounts, subscriptions, and MRR
+  at monthly UTC reporting instants.
+- `fct_monthly_mrr_movements`: new and churned MRR between snapshots,
+  reconciled to closing MRR.
 
-Local builds use one thread after concurrent view replacement encountered
-a PostgreSQL deadlock. The single-thread full build passed all eight
-models and 67 tests.
+Collections models include generated records and teaching examples.
+MRR models include only generated subscriptions whose IDs begin with SYN_.
 
-The default reporting cutoff is October 1, 2026 at 00:00 UTC.
-These models include synthetic and teaching records.
+The default collections reporting cutoff is October 1, 2026 at 00:00 UTC.
+MRR snapshots span January 1, 2025 through October 1, 2026.
 
-The verified full build contains seven views and 56 passing data tests.
+The verified full build contains ten views and 84 passing data tests.
 
-Verified collections results:
-
-| Metric | Result |
+| Metric | Verified result |
 |---|---:|
 | Accounts with a balance | 154 |
 | Unpaid invoices | 327 |
@@ -222,6 +225,17 @@ Verified collections results:
 | Total outstanding (USD) | 97,920 |
 | Overdue balance (USD) | 89,620 |
 | Balance 91+ days past due (USD) | 64,700 |
+| Monthly MRR snapshots | 22 |
+| Latest active generated accounts | 216 |
+| Latest MRR (USD) | 56,400 |
+| MRR movement periods | 21 |
+| MRR reconciliation mismatches | 0 |
 
-An automated reconciliation test checks that account-level invoice
-counts and balances match the invoice-level totals.
+Account collections reconcile against invoice-level counts and balances.
+Overdue diagnostics reconcile invoice IDs, reporting cutoffs, and balances
+against invoice aging. Monthly MRR movements must reconcile to closing MRR
+with zero difference in every period.
+
+Local builds use one thread after concurrent view replacement encountered
+a PostgreSQL deadlock. The single-thread full build passed all ten models
+and 84 tests.

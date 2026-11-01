@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: fct_monthly_mrr_movements
+    description: >
+      One row per interval between monthly MRR snapshots.
+      Includes only generated subscriptions. Events occur after
+      the previous UTC snapshot and at or before the current snapshot.
+
+    columns:
+      - name: snapshot_date
+        description: "Closing reporting date for the movement interval."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_monthly_mrr_snapshot')
+                field: snapshot_date
+
+      - name: opening_mrr_usd
+        description: "MRR at the previous snapshot."
+        data_tests:
+          - not_null
+
+      - name: new_subscriptions
+        description: "Generated subscriptions started during the interval."
+        data_tests:
+          - not_null
+
+      - name: new_mrr_usd
+        description: "Monthly normalized MRR added by subscription starts."
+        data_tests:
+          - not_null
+
+      - name: churned_subscriptions
+        description: "Generated subscriptions ended during the interval."
+        data_tests:
+          - not_null
+
+      - name: churned_mrr_usd
+        description: "Monthly normalized MRR removed by subscription endings."
+        data_tests:
+          - not_null
+
+      - name: net_mrr_change_usd
+        description: "New MRR minus churned MRR."
+        data_tests:
+          - not_null
+
+      - name: closing_mrr_usd
+        description: "MRR at the current snapshot."
+        data_tests:
+          - not_null
+
+      - name: reconciliation_difference_usd
+        description: "Closing MRR minus (opening MRR + new MRR - churned MRR)."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0]
+                quote: false
