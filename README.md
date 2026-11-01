@@ -11,10 +11,9 @@ using synthetic SaaS billing data.
 - SQL views for MRR snapshots, MRR movements, plan-level churn,
   invoice aging, account balances, and overdue payment diagnostics.
 - A Jupyter notebook containing charts, analysis, and documented findings.
-- Seven dbt views with 56 passing data tests, including invoice coverage,
-  balance rules, and account-to-invoice reconciliation.
-  - Ten dbt views with 84 passing data tests covering staging,
-  collections, overdue payment diagnostics, and monthly MRR reconciliation.
+- Eleven dbt views with 92 passing data tests covering staging,
+  collections, overdue payment diagnostics, monthly MRR reconciliation,
+  and plan-level subscription churn.
 
 ## Technology
 
@@ -39,6 +38,10 @@ plus two original teaching examples.
 Generated CSV files are excluded from Git. Their generation scripts
 are included.
 
+MRR and churn analysis includes only generated subscriptions whose IDs
+begin with `SYN_`. Collections analysis includes generated records
+and the two teaching examples.
+
 ## Selected findings
 
 At the October 1, 2026 UTC reporting cutoff:
@@ -49,12 +52,12 @@ At the October 1, 2026 UTC reporting cutoff:
 - Pooled monthly subscription churn was 1.78% for Growth,
   1.61% for Starter, and 1.08% for Enterprise.
 
-Billing and collection results include the generated records and
-the two original examples:
+Billing and collection results include:
 
 - Total billed: USD 685,400.
 - Collected cash: USD 587,480.
-- Outstanding balance: USD 97,920.
+- Outstanding balance: USD 97,920 across 327 unpaid invoices.
+- Accounts with an outstanding balance: 154.
 - Overdue balance: USD 89,620 across 291 invoices.
 - Balances at least 91 days overdue: USD 64,700.
 - The ten accounts with the largest overdue balances held USD 31,200,
@@ -68,68 +71,61 @@ Overdue balances were classified as:
 | No completed attempts | 88 | 34,900 |
 | Partially paid | 61 | 13,320 |
 
+These categories describe recorded payment activity. They do not establish
+the cause of nonpayment or predict recoverable cash.
+
 ## Project organization
 
-- sql/: numbered schema, loading, validation, and analysis scripts.
-- scripts/: Python database access and synthetic data generators.
-- notebooks/01_revenue_analysis.ipynb: analysis and visualizations.
-- requirements.txt: direct Python dependencies.
-- data/generated/: locally generated CSV files, excluded from Git.
-- models/: dbt staging and analytical models with YAML documentation and tests.
-- tests/: SQL checks for invoice coverage, balance rules, and reconciliation.
-- dbt_project.yml: dbt project configuration.
-- profiles.yml: PostgreSQL connection configuration using environment variables.
-- requirements-dbt.txt: dbt environment dependencies.
+- `sql/`: numbered schema, loading, validation, and analysis scripts.
+- `scripts/`: Python database access and synthetic data generators.
+- `notebooks/01_revenue_analysis.ipynb`: analysis and visualizations.
+- `models/`: dbt staging and analytical models with YAML documentation
+  and data tests.
+- `tests/`: SQL checks for coverage, balance rules, reconciliation,
+  and plan-level churn rules.
+- `dbt_project.yml`: dbt project configuration.
+- `profiles.yml`: PostgreSQL connection configuration using environment
+  variables.
+- `requirements.txt`: analysis environment dependencies.
+- `requirements-dbt.txt`: dbt environment dependencies.
+- `data/generated/`: locally generated CSV files, excluded from Git.
 
 ## Running the analysis
 
 The notebook expects a populated local PostgreSQL database named
-saas_analytics on localhost:5432, with the analytical views already created.
+`saas_analytics` on `localhost:5432`, with the original SQL analytical
+views already created.
 
-Use the project's Python environment and open
-notebooks/01_revenue_analysis.ipynb in Jupyter. The notebook has been
-rerun from a restarted kernel against the existing project database.
+Use the project's `saas-analytics` Python environment and open
+`notebooks/01_revenue_analysis.ipynb` in Jupyter.
 
-## Metric definitions and limitations
-
-MRR normalizes subscription prices to monthly amounts and is separate
-from collected cash.
-
-Pooled monthly churn divides total churn events by total opening
-subscription counts across periods. It is not cumulative customer churn.
-
-Historical invoice balances include only invoices issued and successful
-payments completed before the reporting cutoff. Aging uses UTC calendar dates.
-
-The data is synthetic. Findings demonstrate analytical methods rather
-than measured business impact. Outstanding balances are not confirmed
-losses or guaranteed recoveries.
-
-The subscription model uses fixed prices and covers starts and churn.
-Generated signup dates end before September 1, 2026, limiting interpretation
-of acquisition activity in the final reporting interval.
-
-The dbt staging layer and analytical models for invoice balances,
-invoice aging, and account collections are implemented and tested.
-Migration of the remaining SQL analytics into dbt, dashboarding,
-and workflow orchestration remain future work.
+The notebook has been rerun successfully from a restarted kernel.
+The dbt models are built separately in the `analytics` schema.
 
 ## Verified database rebuild
 
 The database was rebuilt successfully in a separate database named
-saas_analytics_rebuild using regenerated CSV files and the saved SQL scripts.
+`saas_analytics_rebuild` using regenerated CSV files and the saved SQL scripts.
 
 ### Prerequisites
 
 - A running local PostgreSQL server.
-- psql and createdb available on PATH.
-- Python 3.12 with the dependencies from requirements.txt installed.
+- `psql` and `createdb` available on PATH.
+- Python 3.12 with the dependencies from `requirements.txt` installed.
 
-Run all commands below from the project root.
+On macOS with Postgres.app, the command-line tools can be added
+to the current Terminal session with:
+
+```bash
+export PATH="/Applications/Postgres.app/Contents/Versions/latest/bin:$PATH"
+```
+
+Run the following commands from the project root.
 
 ### Generate the CSV files
 
 ```bash
+conda activate saas-analytics
 python scripts/02_generate_synthetic_data.py
 python scripts/03_generate_invoices.py
 python scripts/04_generate_payment_attempts.py
@@ -146,7 +142,7 @@ psql -X -h localhost -p 5432 -d saas_analytics_rebuild -P pager=off -v ON_ERROR_
 ```
 
 Run the build after database creation succeeds. The build requires
-the exact database name above and an empty public schema. It stops
+the exact database name above and an empty `public` schema. It stops
 at the first SQL error and does not clear an existing populated database.
 
 ### Verified results
@@ -157,16 +153,16 @@ at the first SQL error and does not clear an existing populated database.
 | Subscriptions | 252 |
 | Invoices | 1,995 |
 | Payment attempts | 2,145 |
-| Data-quality checks passed | 6 of 6 |
+| SQL data-quality checks passed | 6 of 6 |
 | Total billed (USD) | 685,400 |
 | Total collected (USD) | 587,480 |
 | Total outstanding (USD) | 97,920 |
 | MRR movement periods | 21 |
 | MRR reconciliation mismatches | 0 |
 
-This procedure verifies the database build. The existing analysis notebook
-connects to saas_analytics; it does not automatically switch to
-saas_analytics_rebuild.
+This procedure verifies the original SQL database build.
+The existing analysis notebook connects to `saas_analytics`;
+it does not automatically switch to `saas_analytics_rebuild`.
 
 ## dbt staging layer
 
@@ -181,61 +177,106 @@ The staging layer preserves the source records, including synthetic data
 and teaching examples. It has 29 passing data tests covering unique IDs,
 required fields, accepted values, and relationships between tables.
 
-Development uses the separate `saas-dbt` conda environment. Package
-versions are recorded in `requirements-dbt.txt`.
+## dbt analytical models
 
-The project profile reads `DBT_USER` from the environment and defaults
-to the `saas_analytics` database.
+The four staging views feed seven analytical views:
 
-Run from the project directory with `DBT_USER` set:
-
-`DBT_ENGINE_MANAGE_STATE=0 dbt build --profiles-dir .`
-
-The environment prefix disables dbt State for this local build.
-The staging layer contains four views and 29 data tests.
-The full build, including analytical models, is documented below.
-
-## ## dbt analytical models
-
-Four staging views feed six analytical views:
-
-- `fct_invoice_balances`: invoice balances at the reporting cutoff.
-- `fct_invoice_aging`: UTC calendar-day aging and overdue flags.
-- `mart_account_collections`: unpaid and overdue balances by account.
-- `fct_overdue_payment_diagnostics`: completed payment activity behind
-  each overdue invoice.
-- `fct_monthly_mrr_snapshot`: active accounts, subscriptions, and MRR
-  at monthly UTC reporting instants.
-- `fct_monthly_mrr_movements`: new and churned MRR between snapshots,
-  reconciled to closing MRR.
+| Model | Purpose |
+|---|---|
+| `fct_invoice_balances` | Invoice balances at the reporting cutoff |
+| `fct_invoice_aging` | UTC calendar-day aging and overdue flags |
+| `mart_account_collections` | Unpaid and overdue balances by account |
+| `fct_overdue_payment_diagnostics` | Completed payment activity behind overdue invoices |
+| `fct_monthly_mrr_snapshot` | Active generated accounts, subscriptions, and monthly MRR |
+| `fct_monthly_mrr_movements` | New and churned MRR reconciled to closing MRR |
+| `fct_monthly_plan_churn` | Monthly churn among opening subscriptions, grouped by plan |
 
 Collections models include generated records and teaching examples.
-MRR models include only generated subscriptions whose IDs begin with SYN_.
+MRR and churn models include only generated subscriptions whose IDs
+begin with `SYN_`.
 
 The default collections reporting cutoff is October 1, 2026 at 00:00 UTC.
 MRR snapshots span January 1, 2025 through October 1, 2026.
 
-The verified full build contains ten views and 84 passing data tests.
+### Running dbt
 
-| Metric | Verified result |
+Development uses the separate `saas-dbt` conda environment.
+Package versions are recorded in `requirements-dbt.txt`.
+
+The project profile reads `DBT_USER` from the environment and defaults
+to the `saas_analytics` database. Set `DBT_USER` to your local PostgreSQL role.
+The development machine uses the role shown below.
+
+```bash
+conda activate saas-dbt
+export DBT_USER="chandrahassai"
+DBT_ENGINE_MANAGE_STATE=0 dbt build --profiles-dir .
+```
+
+The environment prefix disables dbt State for this local build.
+
+Local builds use one thread after concurrent view replacement encountered
+a PostgreSQL deadlock.
+
+### Verified dbt results
+
+The full build passed all eleven views and 92 data tests.
+dbt reported `PASS=103`, `ERROR=0`, and `SKIP=0`.
+
+The 29 staging tests are included in the 92-test total.
+The six original SQL data-quality checks are separate.
+
+| Check | Verified result |
 |---|---:|
-| Accounts with a balance | 154 |
-| Unpaid invoices | 327 |
-| Overdue invoices | 291 |
-| Total outstanding (USD) | 97,920 |
-| Overdue balance (USD) | 89,620 |
-| Balance 91+ days past due (USD) | 64,700 |
 | Monthly MRR snapshots | 22 |
 | Latest active generated accounts | 216 |
 | Latest MRR (USD) | 56,400 |
 | MRR movement periods | 21 |
 | MRR reconciliation mismatches | 0 |
+| Plan-period churn rows | 63 |
+| Churn reporting periods | 21 |
+| Subscription plans | 3 |
 
 Account collections reconcile against invoice-level counts and balances.
 Overdue diagnostics reconcile invoice IDs, reporting cutoffs, and balances
-against invoice aging. Monthly MRR movements must reconcile to closing MRR
-with zero difference in every period.
+against invoice aging.
 
-Local builds use one thread after concurrent view replacement encountered
-a PostgreSQL deadlock. The single-thread full build passed all ten models
-and 84 tests.
+Monthly MRR movements must reconcile to closing MRR with zero difference
+in every period.
+
+Plan-level churn tests check plan-period uniqueness, valid reporting
+periods, valid counts, and valid percentages.
+
+## Metric definitions and limitations
+
+MRR normalizes subscription prices to monthly amounts and is separate
+from collected cash.
+
+MRR snapshots include subscriptions started at or before the reporting
+instant and not ended at that instant.
+
+Monthly plan churn uses subscriptions active at the opening snapshot
+as its denominator. The percentage is null when the opening count is zero.
+
+Pooled monthly churn divides total churn events by total opening
+subscription counts across periods. It is not an average of monthly
+percentages or cumulative customer churn.
+
+Historical invoice balances include only invoices issued and successful
+payments completed before the reporting cutoff. Aging uses UTC calendar dates.
+
+The data is synthetic. Findings demonstrate analytical methods rather
+than measured business impact. Outstanding balances are not confirmed
+losses or guaranteed recoveries.
+
+The subscription model uses fixed prices and covers starts and churn.
+Generated signup dates end before September 1, 2026, limiting interpretation
+of acquisition activity in the final reporting interval.
+
+## Future work
+
+- Retention cohort analysis.
+- Conversion-funnel analysis with suitable event data.
+- Dashboarding.
+- Workflow orchestration.
+- Automated CI checks.

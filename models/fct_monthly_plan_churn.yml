@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: fct_monthly_plan_churn
+    description: >
+      One row per plan and monthly reporting interval.
+      Churn is measured among generated subscriptions active
+      at the opening snapshot. Teaching examples are excluded.
+
+    columns:
+      - name: period_start_date
+        description: "Opening UTC reporting date."
+        data_tests:
+          - not_null
+
+      - name: snapshot_date
+        description: "Closing UTC reporting date."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_monthly_mrr_snapshot')
+                field: snapshot_date
+
+      - name: plan_name
+        description: "Subscription plan at the opening snapshot."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Starter', 'Growth', 'Enterprise']
+
+      - name: opening_subscriptions
+        description: "Generated subscriptions active at the opening snapshot."
+        data_tests:
+          - not_null
+
+      - name: churned_subscriptions
+        description: "Opening subscriptions that ended by the closing snapshot."
+        data_tests:
+          - not_null
+
+      - name: subscription_churn_pct
+        description: >
+          Churned subscriptions divided by opening subscriptions,
+          multiplied by 100. Null when the opening count is zero.
