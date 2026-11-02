@@ -452,3 +452,34 @@ python -m unittest discover -s dashboard/tests -v
 
 - Conversion-funnel analysis with suitable event data.
 - Workflow orchestration.
+
+## Local workflow orchestration
+
+Apache Airflow runs locally through Docker Compose. The
+`saas_analytics_workflow` DAG executes three tasks in order:
+
+1. Build 12 dbt views and run 100 data tests.
+2. Run five dashboard integration tests.
+3. Generate dbt documentation.
+
+A manual Airflow run successfully completed all three tasks.
+The dbt build and dashboard checks both returned exit code 0.
+
+The workflow is scheduled for 08:00 America/Los_Angeles, with
+catchup disabled and at most one active run. Each task can retry
+once after a one-minute delay.
+
+Airflow and its separate PostgreSQL metadata database run in
+Docker containers. Workflow tasks connect to the existing
+`saas_analytics` database hosted by Postgres.app on the Mac.
+
+The project is mounted read-only. Airflow state, logs, and dbt
+artifacts are stored in Docker named volumes.
+
+This is a local development setup. Scheduled execution requires
+the Mac to be awake and Docker, Airflow, and Postgres.app to be
+running. The workflow does not reload source CSV files or advance
+the fixed reporting cutoff of October 1, 2026.
+
+GitHub Actions separately verifies the analytics pipeline and
+dashboard against a fresh verification database.

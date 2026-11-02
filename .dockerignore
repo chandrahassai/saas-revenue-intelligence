@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+.venv
+venv
+.ci-*
+data
+notebooks
+target
+logs
+dbt_packages
+.DS_Store
+**/__pycache__
+**/*.pyc
+**/.ipynb_checkpoints

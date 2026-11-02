@@ -1,0 +1,66 @@
+name: saas-orchestration
+
+services:
+  airflow-metadata:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-metadata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  airflow:
+    image: saas-airflow:3.3.2
+    build:
+      context: ..
+      dockerfile: orchestration/Dockerfile
+    command: standalone
+    depends_on:
+      airflow-metadata:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://airflow:airflow@airflow-metadata:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__PARALLELISM: "2"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: UTC
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: >-
+        /opt/airflow/state/simple_auth_manager_passwords.json
+      AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/state/logs
+
+      DBT_ENGINE_MANAGE_STATE: "0"
+      DBT_HOST: host.docker.internal
+      DBT_USER: chandrahassai
+      DBT_PASSWORD: ""
+      DBT_DATABASE: saas_analytics
+
+      PGHOST: host.docker.internal
+      PGPORT: "5432"
+      PGUSER: chandrahassai
+      PGPASSWORD: ""
+      PGDATABASE: saas_analytics
+      PGCONNECT_TIMEOUT: "10"
+    volumes:
+      - ../:/opt/project:ro
+      - ./dags:/opt/airflow/dags:ro
+      - ./profiles:/opt/dbt-profiles:ro
+      - airflow-state:/opt/airflow/state
+      - airflow-artifacts:/opt/airflow/artifacts
+    restart: unless-stopped
+
+volumes:
+  airflow-metadata:
+  airflow-state:
+  airflow-artifacts:
