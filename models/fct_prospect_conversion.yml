@@ -1,0 +1,166 @@
+version: 2
+
+models:
+  - name: fct_prospect_conversion
+    description: >
+      One row per prospect created before reporting_as_of.
+      Milestones use events observed before the cutoff.
+      Conversion flags use the window from prospect creation,
+      inclusive, to 720 hours later, exclusive.
+      Only mature prospects belong in completed-window conversion rates.
+
+    columns:
+      - name: prospect_id
+        data_tests:
+          - not_null
+          - unique
+
+      - name: as_of
+        data_tests:
+          - not_null
+
+      - name: conversion_deadline
+        data_tests:
+          - not_null
+
+      - name: is_mature
+        description: Whether the full 720-hour window has elapsed.
+        data_tests:
+          - not_null
+
+      - name: trial_within_30_days
+        data_tests:
+          - not_null
+
+      - name: subscription_within_30_days
+        data_tests:
+          - not_null
+
+      - name: payment_within_30_days
+        description: >
+          Whether a positive successful payment occurred within
+          the conversion window. This does not require an invoice
+          to be fully paid.
+        data_tests:
+          - not_null
+
+unit_tests:
+  - name: conversion_boundaries_and_observation_cutoff
+    model: fct_prospect_conversion
+
+    overrides:
+      vars:
+        reporting_as_of: "2026-02-15T00:00:00+00:00"
+
+    given:
+      - input: ref('stg_prospects')
+        rows:
+          - prospect_id: BEFORE_BOUNDARY
+            acquisition_channel: Direct
+            account_id: UNIT_A
+            created_at: "2026-01-01T00:00:00+00:00"
+            trial_started_at: "2026-01-02T00:00:00+00:00"
+
+          - prospect_id: AT_BOUNDARY
+            acquisition_channel: Direct
+            account_id: UNIT_B
+            created_at: "2026-01-01T00:00:00+00:00"
+            trial_started_at: "2026-01-02T00:00:00+00:00"
+
+          - prospect_id: RECENT
+            acquisition_channel: Direct
+            account_id: UNIT_C
+            created_at: "2026-02-01T00:00:00+00:00"
+            trial_started_at: "2026-02-02T00:00:00+00:00"
+
+          - prospect_id: NO_TRIAL
+            acquisition_channel: Direct
+            account_id: null
+            created_at: "2026-01-01T00:00:00+00:00"
+            trial_started_at: null
+
+          - prospect_id: FUTURE
+            acquisition_channel: Direct
+            account_id: null
+            created_at: "2026-02-16T00:00:00+00:00"
+            trial_started_at: null
+
+      - input: ref('stg_subscriptions')
+        rows:
+          - subscription_id: UNIT_SUB_A
+            account_id: UNIT_A
+            started_at: "2026-01-03T00:00:00+00:00"
+
+          - subscription_id: UNIT_SUB_B
+            account_id: UNIT_B
+            started_at: "2026-01-03T00:00:00+00:00"
+
+          - subscription_id: UNIT_SUB_C
+            account_id: UNIT_C
+            started_at: "2026-02-03T00:00:00+00:00"
+
+      - input: ref('stg_invoices')
+        rows:
+          - invoice_id: UNIT_INV_A
+            subscription_id: UNIT_SUB_A
+            issued_at: "2026-01-03T00:00:00+00:00"
+
+          - invoice_id: UNIT_INV_B
+            subscription_id: UNIT_SUB_B
+            issued_at: "2026-01-03T00:00:00+00:00"
+
+          - invoice_id: UNIT_INV_C
+            subscription_id: UNIT_SUB_C
+            issued_at: "2026-02-03T00:00:00+00:00"
+
+      - input: ref('stg_payment_attempts')
+        rows:
+          - payment_attempt_id: UNIT_PAY_A
+            invoice_id: UNIT_INV_A
+            status: succeeded
+            attempted_amount_usd: 100
+            completed_at: "2026-01-30T23:59:59.999999+00:00"
+
+          - payment_attempt_id: UNIT_PAY_B_FAILED
+            invoice_id: UNIT_INV_B
+            status: failed
+            attempted_amount_usd: 100
+            completed_at: "2026-01-04T00:00:00+00:00"
+
+          - payment_attempt_id: UNIT_PAY_B
+            invoice_id: UNIT_INV_B
+            status: succeeded
+            attempted_amount_usd: 100
+            completed_at: "2026-01-31T00:00:00+00:00"
+
+          - payment_attempt_id: UNIT_PAY_C
+            invoice_id: UNIT_INV_C
+            status: succeeded
+            attempted_amount_usd: 100
+            completed_at: "2026-02-15T00:00:00+00:00"
+
+    expect:
+      rows:
+        - prospect_id: BEFORE_BOUNDARY
+          is_mature: true
+          trial_within_30_days: true
+          subscription_within_30_days: true
+          payment_within_30_days: true
+
+        - prospect_id: AT_BOUNDARY
+          is_mature: true
+          trial_within_30_days: true
+          subscription_within_30_days: true
+          payment_within_30_days: false
+
+        - prospect_id: RECENT
+          is_mature: false
+          trial_within_30_days: true
+          subscription_within_30_days: true
+          payment_within_30_days: false
+
+        - prospect_id: NO_TRIAL
+          is_mature: true
+          trial_within_30_days: false
+          subscription_within_30_days: false
+          payment_within_30_days: false

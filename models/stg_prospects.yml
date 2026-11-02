@@ -1,0 +1,60 @@
+version: 2
+
+sources:
+  - name: saas_funnel_raw
+    description: Synthetic prospect and trial activity for funnel analysis.
+    database: "{{ target.dbname }}"
+    schema: public
+
+    tables:
+      - name: prospects
+        description: >
+          One row per synthetic prospect. Prospect creation and trial
+          timestamps are simulated. Nullable account_id links a prospect
+          to an existing account.
+
+models:
+  - name: stg_prospects
+    description: >
+      Staged synthetic prospects, including prospects without accounts.
+      Subscription and payment milestones are derived in downstream models.
+
+    columns:
+      - name: prospect_id
+        description: Unique synthetic prospect identifier.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: acquisition_channel
+        description: Simulated acquisition channel.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Organic search
+                  - Paid search
+                  - Referral
+                  - Partner
+                  - Direct
+
+      - name: created_at
+        description: Timestamp when the synthetic prospect entered the funnel.
+        data_tests:
+          - not_null
+
+      - name: trial_started_at
+        description: >
+          Simulated trial start timestamp. Null when no trial has started.
+
+      - name: account_id
+        description: >
+          Optional link to an existing account. Each account links to
+          at most one prospect.
+        data_tests:
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_accounts')
+                field: account_id

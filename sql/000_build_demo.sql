@@ -27,6 +27,7 @@ END
 $$;
 
 -- Create tables and insert the original teaching examples.
+
 \ir 001_create_accounts.sql
 \ir 002_insert_sample_accounts.sql
 \ir 003_create_subscriptions.sql
@@ -38,10 +39,17 @@ $$;
 \ir 011_insert_unpaid_customer.sql
 
 -- Create the invoice summary and import generated records.
+
 \ir 013_create_invoice_payment_summary_view.sql
 \ir 015_load_generated_data.sql
 
+-- Create and load the synthetic prospect source.
+
+\ir 023_create_prospects.sql
+\ir 024_load_prospects.sql
+
 -- Check data quality and create analytical views.
+
 \ir 016_data_quality_checks.sql
 \ir 017_create_monthly_mrr_view.sql
 \ir 018_create_monthly_mrr_movements.sql
@@ -51,6 +59,7 @@ $$;
 \ir 022_create_overdue_payment_diagnostics.sql
 
 -- Display final verification results.
+
 SELECT current_database() AS rebuilt_database;
 
 \ir 014_billing_collection_summary.sql

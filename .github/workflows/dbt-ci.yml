@@ -85,6 +85,7 @@ jobs:
           .ci-analytics/bin/python scripts/02_generate_synthetic_data.py
           .ci-analytics/bin/python scripts/03_generate_invoices.py
           .ci-analytics/bin/python scripts/04_generate_payment_attempts.py
+          .ci-analytics/bin/python scripts/05_generate_prospects.py
 
       - name: Rebuild verification database
         run: |

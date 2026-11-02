@@ -1,0 +1,131 @@
+version: 2
+
+models:
+  - name: mart_conversion_funnel
+    description: >
+      One row per acquisition channel at the reporting cutoff.
+      Each stage counts prospects, not subscription or payment events.
+      Conversion rates include only prospects with a full 720-hour
+      observation window. Rates with zero denominators are null.
+
+    columns:
+      - name: as_of
+        data_tests:
+          - not_null
+
+      - name: acquisition_channel
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values:
+                  - Organic search
+                  - Paid search
+                  - Referral
+                  - Partner
+                  - Direct
+
+      - name: total_prospects
+        data_tests:
+          - not_null
+
+      - name: eligible_prospects
+        data_tests:
+          - not_null
+
+      - name: pending_prospects
+        data_tests:
+          - not_null
+
+      - name: trial_prospects
+        data_tests:
+          - not_null
+
+      - name: subscribed_prospects
+        data_tests:
+          - not_null
+
+      - name: paying_prospects
+        data_tests:
+          - not_null
+
+unit_tests:
+  - name: funnel_excludes_pending_and_handles_zero_denominators
+    model: mart_conversion_funnel
+
+    given:
+      - input: ref('fct_prospect_conversion')
+        rows:
+          - as_of: "2026-10-01T00:00:00+00:00"
+            acquisition_channel: Direct
+            is_mature: true
+            trial_within_30_days: true
+            subscription_within_30_days: true
+            payment_within_30_days: true
+
+          - as_of: "2026-10-01T00:00:00+00:00"
+            acquisition_channel: Direct
+            is_mature: true
+            trial_within_30_days: true
+            subscription_within_30_days: false
+            payment_within_30_days: false
+
+          - as_of: "2026-10-01T00:00:00+00:00"
+            acquisition_channel: Direct
+            is_mature: false
+            trial_within_30_days: true
+            subscription_within_30_days: true
+            payment_within_30_days: true
+
+          - as_of: "2026-10-01T00:00:00+00:00"
+            acquisition_channel: Partner
+            is_mature: false
+            trial_within_30_days: true
+            subscription_within_30_days: true
+            payment_within_30_days: true
+
+          - as_of: "2026-10-01T00:00:00+00:00"
+            acquisition_channel: Referral
+            is_mature: true
+            trial_within_30_days: false
+            subscription_within_30_days: false
+            payment_within_30_days: false
+
+    expect:
+      rows:
+        - acquisition_channel: Direct
+          total_prospects: 3
+          eligible_prospects: 2
+          pending_prospects: 1
+          trial_prospects: 2
+          subscribed_prospects: 1
+          paying_prospects: 1
+          prospect_to_trial_pct: "100.00"
+          trial_to_subscription_pct: "50.00"
+          subscription_to_payment_pct: "100.00"
+          prospect_to_payment_pct: "50.00"
+
+        - acquisition_channel: Partner
+          total_prospects: 1
+          eligible_prospects: 0
+          pending_prospects: 1
+          trial_prospects: 0
+          subscribed_prospects: 0
+          paying_prospects: 0
+          prospect_to_trial_pct: null
+          trial_to_subscription_pct: null
+          subscription_to_payment_pct: null
+          prospect_to_payment_pct: null
+
+        - acquisition_channel: Referral
+          total_prospects: 1
+          eligible_prospects: 1
+          pending_prospects: 0
+          trial_prospects: 0
+          subscribed_prospects: 0
+          paying_prospects: 0
+          prospect_to_trial_pct: "0.00"
+          trial_to_subscription_pct: null
+          subscription_to_payment_pct: null
+          prospect_to_payment_pct: "0.00"
