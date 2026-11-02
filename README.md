@@ -8,6 +8,45 @@ dashboard, local Airflow orchestration, and GitHub Actions checks.
 The data is synthetic. Results demonstrate analytical and engineering methods;
 they are not measured business outcomes.
 
+- [Architecture](docs/architecture.md)
+- [Business findings and decision opportunities](docs/business-findings.md)
+
+## Dashboard preview
+
+The dashboards use synthetic data with a reporting cutoff of
+October 1, 2026 at 00:00 UTC.
+
+### Revenue
+
+Monthly recurring revenue, active accounts, and new versus churned MRR.
+
+![Revenue overview with MRR metrics, trend, and movements](docs/images/revenue.png)
+
+### Retention
+
+Subscription retention by start cohort and monthly checkpoint.
+
+![Subscription cohort retention heatmap](docs/images/retention-overview.png)
+
+[View pooled monthly churn by plan](docs/images/retention-churn.png)
+
+### Collections
+
+Outstanding balances by invoice age and payment activity on overdue invoices.
+
+![Collections overview with invoice aging and payment activity](docs/images/collections.png)
+
+[View accounts with the largest overdue balances](docs/images/collections-accounts.png)
+
+### Conversion funnel
+
+Prospect-to-payment conversion within a 30-day window. Rates exclude
+prospects without a complete observation window.
+
+![Conversion funnel with stage counts, rates, and channel comparison](docs/images/funnel.png)
+
+[View conversion counts by acquisition channel](docs/images/funnel-channels.png)
+
 ## Current implementation
 
 - Five source tables: accounts, subscriptions, invoices, payment attempts,
