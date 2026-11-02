@@ -1,0 +1,45 @@
+name: Airflow validation CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-orchestration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Validate Docker Compose configuration
+        run: docker compose -f orchestration/compose.yml config --quiet
+
+      - name: Build Airflow image
+        run: |
+          docker build \
+            -f orchestration/Dockerfile \
+            -t saas-airflow:3.3.2 \
+            .
+
+      - name: Test DAG loading and dependencies
+        run: |
+          docker run --rm \
+            --network none \
+            --entrypoint python \
+            -e AIRFLOW__CORE__LOAD_EXAMPLES=false \
+            -e AIRFLOW__CORE__DAGS_FOLDER=/opt/project/orchestration/dags \
+            --mount "type=bind,source=${PWD},target=/opt/project,readonly" \
+            saas-airflow:3.3.2 \
+            -m unittest discover \
+            -s /opt/project/orchestration/tests \
+            -v
